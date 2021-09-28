@@ -12,9 +12,8 @@ def load_player_stats():
 
     dfs = []
     for playerstats in p.glob("20*.csv"):
-        print(playerstats)
         df = pd.read_csv(playerstats)
-        print(type(playerstats))
+        year = int(str(playerstats.relative_to("data/"))[:4])
         df["year"] = int(str(playerstats.relative_to("data/"))[:4])
         #df = df.head(100)
         dfs.append(df)
@@ -35,21 +34,24 @@ def split(df, train=0.7):
     df["Split"] = df["Player"].apply(lambda elem: randomize(elem))
     return df
 
-def get_model(x_size=20, h_size=10, hidden_layers=4):
+def get_model(x_size=20, h_size=10, hidden_layers=4, out_size=None):
     inputs = keras.Input(shape=(x_size,))
-    x = layers.Dense(h_size, activation="relu")(inputs)
+    x = layers.Dense(h_size)(inputs)
     for h in range(hidden_layers):
         x = layers.Dense(h_size, activation="relu")(x)
-    outputs = layers.Dense(x_size)(x)
+    if out_size is None:
+        outputs = layers.Dense(x_size)(x)
+    else:
+        outputs = layers.Dense(out_size)(x)
     model = keras.Model(inputs=inputs, outputs=outputs, name="nhl_network")
     return model
 
-def generate_datasets(df, std, column_legend=None):
+def generate_datasets(df, std, out_column=None, column_legend=None):
     x = []
     y = []
     grouped = df.groupby("Player")
     for group_name, df_group in progressbar.progressbar(grouped):
-        df_group = df_group / std
+        df_group = df_group# / std
         df_group = df_group.sort_values("year")
         df_group = df_group.drop("year", axis=1)
         if column_legend is None:
@@ -64,54 +66,71 @@ def generate_datasets(df, std, column_legend=None):
             row_plus_1 = df_group.loc[ix + 1]
 
             x.append(np.array(row))
-            y.append(np.array(row_plus_1))
+            if out_column is None:
+                y.append(np.array(row_plus_1))
+            else:
+                y.append(row_plus_1[out_column])
 
     return np.array(x), np.array(y), column_legend
 
 def main():
     df = load_player_stats()
+
+    values_2021 = df[df["year"] == 2020]
+    print("Values for 2021")
+    print(values_2021)
     df = split(df)
     std = df.std()
-    
-    """
-    print(df)
-    print(std)
-    train_df = df[df["Split"] == "Train"]
-    test_df = df[df["Split"] == "Test"]
 
-    train_df = train_df.fillna(0.0)
-    test_df = test_df.fillna(0.0)
+    prediction_variable = "G"#"PTS"
+    print("prediction_variable", prediction_variable, "mean:", df[prediction_variable].mean())
+    print("prediction_variable", prediction_variable, "std:", df[prediction_variable].std())
 
-    print("Train DF")
-    print(train_df)
-
-    print("Test DF")
-    print(test_df)
-
-    print(train_df.columns, len(train_df.columns))
-    print(test_df.columns, len(test_df.columns))
-    
-    x_train, y_train, column_legend = generate_datasets(train_df, std)
-    x_test, y_test, _ = generate_datasets(test_df, std, column_legend=column_legend)
-
-    #(x_train, y_train), _ = keras.datasets.boston_housing.load_data(
-    #    path="boston_housing.npz", test_split=0.2, seed=113
-    #)
-    print(x_train.shape, y_train.shape)
-    """
+    mean_absolute_error = (df[prediction_variable] - df[prediction_variable].mean()).abs().mean()
+    print("MAE for constant predictor", mean_absolute_error)
     df = df.fillna(0.0)
-    x_train, y_train, column_legend = generate_datasets(df, std)
+    x_train, y_train, column_legend = generate_datasets(df, std, out_column=prediction_variable)
 
-    model = get_model(x_size=len(column_legend), h_size=20)
+    print("XTRAIN", x_train)
+    print(column_legend)
+
+    y_naive = x_train[:, column_legend.index(prediction_variable)]
+    print("Y naive shape", y_naive.shape)
+
+    naive_error = np.mean(np.abs(y_train - y_naive))
+    print("MAE for last-year predictor", naive_error)
+
+    x_train_std = np.std(x_train, axis=0)
+    print("np.std(x_train)", x_train_std.shape)
+    x_train = x_train / x_train_std
+    model = get_model(x_size=len(column_legend), h_size=16, hidden_layers=2, out_size=1)
     keras.utils.plot_model(model, model.name + ".png")
     model.compile(
-        loss=keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.SUM),
-        optimizer=keras.optimizers.RMSprop(),
+        loss=keras.losses.MeanSquaredError(),
+        optimizer=keras.optimizers.Adam(),
         metrics=["mean_absolute_error"],
     )
 
     epochs = 200
-    history = model.fit(x_train, y_train, batch_size=64, epochs=epochs, validation_split=0.2)
+    history = model.fit(x_train, y_train, batch_size=128, epochs=epochs, validation_split=0.2)
+    test_dict = model.test_on_batch(x_train, y=y_train, sample_weight=None, reset_metrics=True, return_dict=True)
+    print(test_dict)
+
+    x_2021 = values_2021[column_legend]
+    x_2021 = x_2021.fillna(0.0)
+    print("x 2021")
+    print(x_2021)
+
+    print(np.std(x_train))
+    x_2021 = x_2021.to_numpy() / x_train_std
+    print(x_2021.shape)
+    pts_2022 = model.predict(x_2021)
+    values_2021[prediction_variable + "2022"] = pts_2022
+    print(values_2021)
+
+    values_2021 = values_2021.sort_values(prediction_variable + "2022")
+    print(values_2021[["Player", prediction_variable + "2022"]])
+
 
 if __name__ == "__main__":
     main()
