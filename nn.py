@@ -6,6 +6,7 @@ import progressbar
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+import argparse
 
 def load_player_stats():
     p = Path("data/")
@@ -73,6 +74,23 @@ def generate_datasets(df, std, out_column=None, column_legend=None):
 
     return np.array(x), np.array(y), column_legend
 
+def simulate(df, column, N, std):
+    winners = {}
+
+    print("Simulate winners...")
+    for n in progressbar.progressbar(range(N)):
+        new_df = df[["Player", column]].copy()
+        noise = np.random.normal(size=len(df)) * std
+        new_df["noise"] = noise
+        new_df["simulated"] = new_df[column] + new_df["noise"]
+
+        new_df = new_df.sort_values("simulated")
+        winner = list(new_df.tail(1)["Player"])[0]
+
+        winners[winner] = winners.get(winner,0) + 1
+
+    return winners
+
 def main():
     df = load_player_stats()
 
@@ -82,7 +100,7 @@ def main():
     df = split(df)
     std = df.std()
 
-    prediction_variable = "G"#"PTS"
+    prediction_variable = "PTS"
     print("prediction_variable", prediction_variable, "mean:", df[prediction_variable].mean())
     print("prediction_variable", prediction_variable, "std:", df[prediction_variable].std())
 
@@ -103,7 +121,7 @@ def main():
     x_train_std = np.std(x_train, axis=0)
     print("np.std(x_train)", x_train_std.shape)
     x_train = x_train / x_train_std
-    model = get_model(x_size=len(column_legend), h_size=16, hidden_layers=2, out_size=1)
+    model = get_model(x_size=len(column_legend), h_size=12, hidden_layers=4, out_size=1)
     keras.utils.plot_model(model, model.name + ".png")
     model.compile(
         loss=keras.losses.MeanSquaredError(),
@@ -112,9 +130,9 @@ def main():
     )
 
     epochs = 200
-    history = model.fit(x_train, y_train, batch_size=128, epochs=epochs, validation_split=0.2)
-    test_dict = model.test_on_batch(x_train, y=y_train, sample_weight=None, reset_metrics=True, return_dict=True)
-    print(test_dict)
+    callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5)
+
+    history = model.fit(x_train, y_train, batch_size=128, epochs=epochs, validation_split=0.3, callbacks=[callback])
 
     x_2021 = values_2021[column_legend]
     x_2021 = x_2021.fillna(0.0)
@@ -131,6 +149,13 @@ def main():
     values_2021 = values_2021.sort_values(prediction_variable + "2022")
     print(values_2021[["Player", prediction_variable + "2022"]])
 
+    N = 15000
+    winners = simulate(values_2021, prediction_variable, N, std[prediction_variable])
 
+    print(winners)
+    winners = sorted(winners.items(), key=lambda x: x[1])
+
+    for a, b in winners:
+        print(a, b / N)
 if __name__ == "__main__":
     main()
