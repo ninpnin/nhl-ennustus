@@ -100,7 +100,7 @@ def main():
     df = split(df)
     std = df.std()
 
-    prediction_variable = "PTS"
+    prediction_variable = "PP"
     print("prediction_variable", prediction_variable, "mean:", df[prediction_variable].mean())
     print("prediction_variable", prediction_variable, "std:", df[prediction_variable].std())
 
@@ -148,6 +148,9 @@ def main():
 
     values_2021 = values_2021.sort_values(prediction_variable + "2022")
     print(values_2021[["Player", prediction_variable + "2022"]])
+
+    output_df = values_2021[["Player", prediction_variable + "2022"]]
+    output_df.to_csv("predictions/" + prediction_variable.replace("/", "") + "2022.csv")
 
     N = 15000
     winners = simulate(values_2021, prediction_variable, N, std[prediction_variable])
