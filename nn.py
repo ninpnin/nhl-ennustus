@@ -92,15 +92,21 @@ def simulate(df, column, N, std):
     return winners
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--prediction_year", type=int, default=2022)
+    parser.add_argument("--pred_var", type=str, default="PP")
+    args = parser.parse_args()
+    
     df = load_player_stats()
 
-    values_2021 = df[df["year"] == 2020]
+    values_2021 = df[df["year"] == args.prediction_year - 1]
     print("Values for 2021")
     print(values_2021)
     df = split(df)
     std = df.std()
 
-    prediction_variable = "PP"
+    prediction_variable = args.pred_var
     print("prediction_variable", prediction_variable, "mean:", df[prediction_variable].mean())
     print("prediction_variable", prediction_variable, "std:", df[prediction_variable].std())
 
