@@ -19,6 +19,7 @@ transformed data {
 
 parameters {
   vector[M] beta_all;
+  //matrix[J, M] beta;
   real beta_0;
   vector[J] beta_0_J;
   real<lower=0> tau_0;
@@ -28,10 +29,12 @@ parameters {
 model {
   // Prior
   beta_all ~ normal(0, y_mean * 0.5);
-  tau_0 ~ normal(0, 0.125);
+  tau_0 ~ normal(0, 1);
+  //for 
+  //beta_all ~ normal(0, y_mean * 0.5);
 
   // Intercept
-  beta_0 ~ normal(y_mean, y_std / 4);
+  beta_0 ~ normal(y_mean, y_std);
   beta_0_J ~ normal(beta_0, tau_0 * y_std);
   
   sigma ~ normal(y_std, y_std);
