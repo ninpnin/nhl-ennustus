@@ -34,7 +34,7 @@ model {
   //beta_all ~ normal(0, y_mean * 0.5);
 
   // Intercept
-  beta_0 ~ normal(y_mean, y_std);
+  beta_0 ~ normal(y_mean, y_mean * 2);
   beta_0_J ~ normal(beta_0, tau_0 * y_std);
   
   sigma ~ normal(y_std, y_std);
@@ -45,12 +45,11 @@ model {
   }
 }
 
-/*
+
 generated quantities {
   vector[N_test] y_test_hat;
   for (i in 1:N_test) {
     int group = z_test[i];
-    y_test_hat[i] = normal_rng(beta_0_J[group] + dot_product(beta[group], x_test[i]), sigma);
+    y_test_hat[i] = normal_rng(beta_0_J[group] + dot_product(beta_all, x_test[i]), sigma);
   }
 }
-*/

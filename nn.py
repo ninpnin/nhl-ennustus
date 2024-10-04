@@ -104,7 +104,7 @@ def main():
     print("Values for 2021")
     print(values_2021)
     df = split(df)
-    std = df.std()
+    std = df.std(numeric_only=True)
 
     prediction_variable = args.pred_var
     print("prediction_variable", prediction_variable, "mean:", df[prediction_variable].mean())
@@ -149,14 +149,14 @@ def main():
     x_2021 = x_2021.to_numpy() / x_train_std
     print(x_2021.shape)
     pts_2022 = model.predict(x_2021)
-    values_2021[prediction_variable + "2022"] = pts_2022
+    values_2021[prediction_variable + f"{args.prediction_year}"] = pts_2022
     print(values_2021)
 
-    values_2021 = values_2021.sort_values(prediction_variable + "2022")
-    print(values_2021[["Player", prediction_variable + "2022"]])
+    values_2021 = values_2021.sort_values(prediction_variable + f"{args.prediction_year}")
+    print(values_2021[["Player", prediction_variable + f"{args.prediction_year}"]])
 
-    output_df = values_2021[["Player", prediction_variable + "2022"]]
-    output_df.to_csv("predictions/" + prediction_variable.replace("/", "") + "2022.csv")
+    output_df = values_2021[["Player", prediction_variable + f"{args.prediction_year}"]]
+    output_df.to_csv("predictions/" + prediction_variable.replace("/", "") + f"{args.prediction_year}.csv")
 
     N = 15000
     winners = simulate(values_2021, prediction_variable, N, std[prediction_variable])

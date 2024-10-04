@@ -34,7 +34,7 @@ head(nhl202021_num)
 ## Normalize input space X to zero mean and unit variance
 covariates <- c("PTS", "G", "GP", "GW", "A", "HIT", "PLUSMINUS", "S", "BLK", "PP", "TOI", "EV", "FO.")
 #covariates <- c("PTS", "G", "GP", "GW", "A", "HIT", "PLUSMINUS", "S", "BLK", "PP", "TOI", "EV", "FO.")
-covariates <- c("PTS", "PP")
+#covariates <- c("PTS", "PP")
 nhl202021_normalized <- as.data.frame(nhl202021_num)
 names(nhl202021_normalized)
 nhl202021_normalized[covariates] <- scale(nhl202021_normalized[covariates])
@@ -67,9 +67,9 @@ dims_test <- dim(test_x[,])
 cor(train.data[c("PTS", "y")])
 
 train_dat <- list(x=train_x, y=c(train_y), z=c(train_z) , N=dims[1], M=dims[2], x_test=test_x,z_test=c(test_z), N_test=dims_test[1])
-fit1 <- stan(file = "hierarchical_model.stan", data=train_dat, iter=2000)
+fit1 <- stan(file = "hierarchical_model.stan", data=train_dat, iter=4000)
+fit1
 e2 <- extract(fit1, permuted = TRUE)
-mean(e2$sigma[,6] )
 y_test_hat <- e2$y_test_hat
 dim(y_test_hat)
 

@@ -5,7 +5,7 @@ def load_player_stats():
     p = Path("data/")
 
     dfs = []
-    for playerstats in p.glob("gks20*.csv"):
+    for playerstats in list(p.glob("gks202*.csv")):
         print(playerstats)
         df = pd.read_csv(playerstats)
         print(type(playerstats))
@@ -18,10 +18,10 @@ def load_player_stats():
 def main():
     df = load_player_stats()
 
-    keepers = df.groupby("Player").mean()  
+    keepers = df.groupby("Player").mean()
     keepers = keepers[keepers["GP"] >= 20]
     print("Best defensive +/-")
-    keepers["gk_index"] = keepers["SV%"] + keepers["SV%"]
+    keepers["gk_index"] = keepers["SV%"] + 0.1 * keepers["GP"] / keepers["GP"].max()
     keepers = keepers.sort_values("gk_index")
     print(keepers)
 

@@ -74,9 +74,10 @@ def get_model(x_size=20, h_size=10, hidden_layers=4, out_init=None):
     if out_size is None:
         outputs = tf.keras.layers.Dense(x_size)(x)
     else:
-        ki = tf.keras.initializers.RandomNormal(stddev=0.1)
+        ki = tf.keras.initializers.RandomNormal(stddev=0.01)
+        kr = keras.regularizers.l2(0.2)
         bi = tf.keras.initializers.Constant(out_init)
-        outputs = tf.keras.layers.Dense(out_size, kernel_initializer=ki, bias_initializer=bi)(x)
+        outputs = tf.keras.layers.Dense(out_size, kernel_initializer=ki, bias_initializer=bi, kernel_regularizer=kr)(x)
     model = keras.Model(inputs=inputs, outputs=outputs, name="nhl_network")
     return model
 
@@ -149,7 +150,7 @@ def main():
     print("prediction_variable", prediction_variable, "mean:", y_mean)
     print("prediction_variable", prediction_variable, "std:",y_std)
 
-    loss, y_pred_init, mean_func = get_loss_function(args.pred_var, y_mean, y_std, override="gaussian")
+    loss, y_pred_init, mean_func = get_loss_function(args.pred_var, y_mean, y_std, override="gaussian_h")
     
     #loss, y_pred_size = keras.losses.MeanSquaredError(), np.array([df[prediction_variable].mean()])
     print(loss)
