@@ -1,1 +1,4 @@
 .DS_Store
+predictions/
+.RData
+.Rhistory
