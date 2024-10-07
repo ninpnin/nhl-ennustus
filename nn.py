@@ -155,16 +155,18 @@ def main():
     values_2021 = values_2021.sort_values(prediction_variable + f"{args.prediction_year}")
     print(values_2021[["Player", prediction_variable + f"{args.prediction_year}"]])
 
-    output_df = values_2021[["Player", prediction_variable + f"{args.prediction_year}"]]
-    output_df.to_csv("predictions/" + prediction_variable.replace("/", "") + f"{args.prediction_year}.csv")
+    print("Columns:", values_2021.columns)
+    output_df = values_2021[["Player", prediction_variable + f"{args.prediction_year}", "Team", "Pos", "GP"]]
+    output_df.to_csv("predictions/" + prediction_variable.replace("/", "") + f"{args.prediction_year}.csv", index=False)
 
     N = 15000
     winners = simulate(values_2021, prediction_variable, N, std[prediction_variable])
 
-    print(winners)
+    #print(winners)
     winners = sorted(winners.items(), key=lambda x: x[1])
-
+    print("Winners:")
     for a, b in winners:
         print(a, b / N)
+
 if __name__ == "__main__":
     main()
